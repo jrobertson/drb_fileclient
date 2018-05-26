@@ -24,9 +24,32 @@ class DRbFileClient
     
   end
   
-  def exists?(filename=@filename)
+  def exists?(filename=@filename)  
+    
+    filename2 = parse_path(filename)
+    @file.exists? filename2
+    
+  end
+
+  def read(filename=@filename)
+    
+    filename2 = parse_path(filename)
+    @file.read filename2
+    
+  end
   
-    filename2 = if @file then
+  def write(filename=@filename, s)
+    
+    filename2 = parse_path(filename)
+    @file.write filename2, s
+    
+  end
+
+  private
+  
+  def parse_path(filename)
+    
+    if @file then
       
       filename
       
@@ -38,22 +61,24 @@ class DRbFileClient
       @file = DRbObject.new nil, "druby://#{host}:#{port}"
       filename[/(?<=^dfs:\/\/)[^\/]+\/(.*)/,1]      
       
-    end
-    
-    @file.exists? filename2
+    end    
     
   end
-
-  def read(filename=@filename)
-    
-    @file.read filename
-    
-  end
-  
-  def write(filename=@filename, s)
-    
-    @file.write filename, s
-    
-  end  
 
 end 
+
+class DfsFile
+  
+  def self.exists?(filename)
+    DRbFileClient.new(filename).exists?
+  end
+  
+  def self.read(filename)
+    DRbFileClient.new.read(filename)
+  end
+  
+  def self.write(filename, s)
+    DRbFileClient.new.write(filename, s)
+  end
+  
+end
