@@ -47,7 +47,7 @@ class DRbFileClient
       filename
     end
 
-    @file.exists? File.join(@directory, filename2)
+    @file.exists?(File.join(@directory, filename2)) if @directory
     
   end
   
