@@ -37,17 +37,29 @@ class DRbFileClient
       'No such file or directory'
     end
     
-  end  
+  end
+
+  def cp(raw_path, raw_path2)
+    
+    path, path2 = if raw_path =~ /^dfs:\/\// then
+      [parse_path(raw_path), parse_path(raw_path2)]
+    else
+      [File.join(@directory, raw_path), File.join(@directory, raw_path2)]
+    end 
+      
+    @file.cp path, path2
+  end   
   
   def exists?(filename=@filename)  
     
     filename2 = if filename =~ /^dfs:\/\// then
       parse_path(filename)
     else
-      filename
+
+      File.join(@directory, filename)
     end
 
-    @file.exists?(File.join(@directory, filename2)) if @directory
+    @file.exists?(filename2) if @directory
     
   end
   
@@ -59,6 +71,17 @@ class DRbFileClient
   def mkdir_p(raw_path)
     path = parse_path(raw_path)
     @file.mkdir_p path
+  end  
+  
+  def mv(raw_path, raw_path2)
+    
+    path, path2 = if raw_path =~ /^dfs:\/\// then
+      [parse_path(raw_path), parse_path(raw_path2)]
+    else
+      [File.join(@directory, raw_path), File.join(@directory, raw_path2)]
+    end 
+      
+    @file.mv path, path2
   end  
   
   def pwd()
@@ -77,6 +100,18 @@ class DRbFileClient
     
     @file.read path
   end
+  
+  def rm(path)
+    
+    path2 = if path =~ /^dfs:\/\// then
+      parse_path( path)
+    else
+      File.join(@directory, path)
+    end
+      
+    @file.rm  path2
+    
+  end    
   
   def write(filename=@filename, s)
         
@@ -108,32 +143,15 @@ class DfsFile
   
   @client = DRbFileClient.new
   
-  def self.exists?(filename)
-    @client.exists?(filename)
-  end
-  
-  def self.chdir(path)
-    @client.chdir(path)
-  end    
-    
-  def self.mkdir(name)
-    @client.mkdir(name)
-  end  
-  
-  def self.mkdir_p(path)
-    @client.mkdir_p(path)
-  end       
-  
-  def self.pwd()
-    @client.pwd()
-  end     
-  
-  def self.read(filename)
-    @client.read(filename)
-  end
-  
-  def self.write(filename, s)
-    @client.write(filename, s)
-  end
+  def self.exists?(filename)  @client.exists?(filename)  end  
+  def self.chdir(path)        @client.chdir(path)        end  
+  def self.cp(path, path2)    @client.cp(path, path2)    end         
+  def self.mkdir(name)        @client.mkdir(name)        end    
+  def self.mkdir_p(path)      @client.mkdir_p(path)      end       
+  def self.mv(path, path2)    @client.mv(path, path2)    end     
+  def self.pwd()              @client.pwd()              end       
+  def self.read(filename)     @client.read(filename)     end
+  def self.rm(filename)       @client.rm(filename)       end  
+  def self.write(filename, s) @client.write(filename, s) end
   
 end
