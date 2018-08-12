@@ -23,6 +23,8 @@ class DRbFileClient
   
   def chdir(raw_path)
     
+    return Dir.chdir raw_path unless @directory or raw_path =~ /^dfs:\/\//
+    
     directory = if raw_path[0] == '/'  then
       raw_path[1..-1]
     elsif raw_path =~ /^dfs:\/\//
@@ -41,6 +43,10 @@ class DRbFileClient
 
   def cp(raw_path, raw_path2)
     
+    unless @directory or raw_path =~ /^dfs:\/\// then
+      return FileUtils.cp raw_path, raw_path2 
+    end
+    
     path, path2 = if raw_path =~ /^dfs:\/\// then
       [parse_path(raw_path), parse_path(raw_path2)]
     else
@@ -52,6 +58,8 @@ class DRbFileClient
   
   def exists?(filename=@filename)  
     
+    return File.exists? filename unless @directory or filename =~ /^dfs:\/\//
+    
     filename2 = if filename =~ /^dfs:\/\// then
       parse_path(filename)
     else
@@ -59,21 +67,35 @@ class DRbFileClient
       File.join(@directory, filename)
     end
 
-    @file.exists?(filename2) if @directory
+    @file.exists?(filename2)
     
   end
   
+  alias exist? exists?
+  
   def mkdir(name)
+    
+    return FileUtils.mkdir name unless @directory or name =~ /^dfs:\/\//
+    
     path = parse_path(name)
     @file.mkdir path
   end
   
   def mkdir_p(raw_path)
+    
+    unless @directory or raw_path =~ /^dfs:\/\// then
+      return FileUtils.mkdir_p raw_path 
+    end
+    
     path = parse_path(raw_path)
     @file.mkdir_p path
   end  
   
   def mv(raw_path, raw_path2)
+    
+    unless @directory or raw_path =~ /^dfs:\/\// then
+      return FileUtils.mv raw_path, raw_path2  
+    end
     
     path, path2 = if raw_path =~ /^dfs:\/\// then
       [parse_path(raw_path), parse_path(raw_path2)]
@@ -86,11 +108,15 @@ class DRbFileClient
   
   def pwd()
     
+    return Dir.pwd unless @directory
+    
     '/' + @directory if @file
     
   end  
 
   def read(filename=@filename)
+    
+    return File.read filename, s unless @directory or filename =~ /^dfs:\/\//
     
     path = if filename =~ /^dfs:\/\// then
       parse_path(filename)
@@ -102,6 +128,8 @@ class DRbFileClient
   end
   
   def rm(path)
+    
+    return FileUtils.rm path unless @directory or path =~ /^dfs:\/\//
     
     path2 = if path =~ /^dfs:\/\// then
       parse_path( path)
@@ -115,11 +143,14 @@ class DRbFileClient
   
   def write(filename=@filename, s)
         
+    return File.write filename, s unless @directory or filename =~ /^dfs:\/\//
+    
     path = if filename =~ /^dfs:\/\// then
       parse_path(filename)
     else
       File.join(@directory, filename)
     end
+    
     
     @file.write path, s     
     
