@@ -3,6 +3,7 @@
 # file: drb_fileclient.rb
 
 require 'drb'
+require 'zip'
 
 
 class DRbFileClient
@@ -155,6 +156,30 @@ class DRbFileClient
     @file.write path, s     
     
   end
+  
+  def zip(filename_zip, a)
+    puts '@directory: ' + @directory.inspect
+    unless @directory or filename_zip =~ /^dfs:\/\// then
+      
+      Zip::File.open(zipfile_zip, Zip::File::CREATE) do |x|
+
+        a.each do |filename, buffer| 
+          x.get_output_stream(filename) {|os| os.write buffer }
+        end
+
+      end
+      
+    end
+    
+    filepath = if filename_zip =~ /^dfs:\/\// then
+      parse_path(filename_zip)
+    else
+      File.join(@directory, filename_zip)
+    end
+
+    @file.zip filepath, a
+    
+  end
 
   private
   
@@ -184,5 +209,6 @@ class DfsFile
   def self.read(filename)     @client.read(filename)     end
   def self.rm(filename)       @client.rm(filename)       end  
   def self.write(filename, s) @client.write(filename, s) end
+  def self.zip(filename, a)   @client.zip(filename, a)   end
   
 end
