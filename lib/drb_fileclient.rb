@@ -86,10 +86,15 @@ class DRbFileClient
     
     unless @directory or raw_path =~ /^dfs:\/\// then
       return FileUtils.mkdir_p raw_path 
+    end    
+    
+    filepath = if raw_path =~ /^dfs:\/\// then
+      parse_path(raw_path)
+    else
+      File.join(@directory, raw_path)
     end
     
-    path = parse_path(raw_path)
-    @file.mkdir_p path
+    @file.mkdir_p filepath
   end  
   
   def mv(raw_path, raw_path2)
@@ -158,7 +163,9 @@ class DRbFileClient
   end
   
   def zip(filename_zip, a)
-    puts '@directory: ' + @directory.inspect
+    
+    puts '@directory: ' + @directory.inspect if @debug
+    
     unless @directory or filename_zip =~ /^dfs:\/\// then
       
       Zip::File.open(zipfile_zip, Zip::File::CREATE) do |x|
