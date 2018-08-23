@@ -26,12 +26,12 @@ class DRbFileClient
     
     return Dir.chdir raw_path unless @directory or raw_path =~ /^dfs:\/\//
     
-    directory = if raw_path[0] == '/'  then
-      raw_path[1..-1]
+    if raw_path[0] == '/'  then
+      directory = raw_path[1..-1]
     elsif raw_path =~ /^dfs:\/\//
-      parse_path(raw_path)
+      @file, directory = parse_path(raw_path)
     else      
-      File.join(@directory, raw_path)
+      directory = File.join(@directory, raw_path)
     end    
     
     if @file.exists? directory then
@@ -48,24 +48,42 @@ class DRbFileClient
       return FileUtils.cp raw_path, raw_path2 
     end
     
-    path, path2 = if raw_path =~ /^dfs:\/\// then
-      [parse_path(raw_path), parse_path(raw_path2)]
+    if raw_path =~ /^dfs:\/\// then
+      
+      if raw_path[/^dfs:\/\/([^\/]+)/] == raw_path2[/^dfs:\/\/([^\/]+)/] then
+        
+        _, path = parse_path(raw_path)
+        @file, path2 = parse_path(raw_path2)
+        @file.cp path, path
+        
+      else
+        
+        @file, path = parse_path(raw_path)
+        file2, path2 = parse_path(raw_path2)
+        content = @file.read path
+        
+        file2.write path2, content
+
+      end
+      
     else
-      [File.join(@directory, raw_path), File.join(@directory, raw_path2)]
+      
+      @file.cp File.join(@directory, raw_path), 
+          File.join(@directory, raw_path2)
+      
     end 
       
-    @file.cp path, path2
   end   
   
   def exists?(filename=@filename)  
     
     return File.exists? filename unless @directory or filename =~ /^dfs:\/\//
     
-    filename2 = if filename =~ /^dfs:\/\// then
-      parse_path(filename)
+    if filename =~ /^dfs:\/\// then
+      @file, filename2 = parse_path(filename)
     else
 
-      File.join(@directory, filename)
+      filename2 = File.join(@directory, filename)
     end
 
     @file.exists?(filename2)
@@ -78,12 +96,12 @@ class DRbFileClient
     
     return Dir[raw_path] unless @directory or raw_path =~ /^dfs:\/\//
     
-    path = if raw_path[0] == '/'  then
-      raw_path[1..-1]
+    if raw_path[0] == '/'  then
+      path = raw_path[1..-1]
     elsif raw_path =~ /^dfs:\/\//
-      parse_path(raw_path)
+      @file, path = parse_path(raw_path)
     else      
-      File.join(@directory, raw_path)
+      path = File.join(@directory, raw_path)
     end    
     
     @file.ls path
@@ -94,7 +112,7 @@ class DRbFileClient
     
     return FileUtils.mkdir name unless @directory or name =~ /^dfs:\/\//
     
-    path = parse_path(name)
+    @file, path = parse_path(name)
     @file.mkdir path
   end
   
@@ -104,10 +122,10 @@ class DRbFileClient
       return FileUtils.mkdir_p raw_path 
     end    
     
-    filepath = if raw_path =~ /^dfs:\/\// then
-      parse_path(raw_path)
+    if raw_path =~ /^dfs:\/\// then
+      @file, filepath = parse_path(raw_path)
     else
-      File.join(@directory, raw_path)
+      filepath = File.join(@directory, raw_path)
     end
     
     @file.mkdir_p filepath
@@ -119,10 +137,12 @@ class DRbFileClient
       return FileUtils.mv raw_path, raw_path2  
     end
     
-    path, path2 = if raw_path =~ /^dfs:\/\// then
-      [parse_path(raw_path), parse_path(raw_path2)]
+    if raw_path =~ /^dfs:\/\// then
+      _, path = parse_path(raw_path)
+      @file, path2 = parse_path(raw_path2)
     else
-      [File.join(@directory, raw_path), File.join(@directory, raw_path2)]
+      path = File.join(@directory, raw_path)
+      path2 = File.join(@directory, raw_path2)
     end 
       
     @file.mv path, path2
@@ -140,10 +160,10 @@ class DRbFileClient
     
     return File.read filename, s unless @directory or filename =~ /^dfs:\/\//
     
-    path = if filename =~ /^dfs:\/\// then
-      parse_path(filename)
+    if filename =~ /^dfs:\/\// then
+      @file, path = parse_path(filename)
     else
-      File.join(@directory, filename)
+      path = File.join(@directory, filename)
     end
     
     @file.read path
@@ -153,10 +173,10 @@ class DRbFileClient
     
     return FileUtils.rm path unless @directory or path =~ /^dfs:\/\//
     
-    path2 = if path =~ /^dfs:\/\// then
-      parse_path( path)
+    if path =~ /^dfs:\/\// then
+      @file, path2 = parse_path( path)
     else
-      File.join(@directory, path)
+      path2 = File.join(@directory, path)
     end
       
     @file.rm  path2
@@ -167,12 +187,11 @@ class DRbFileClient
         
     return File.write filename, s unless @directory or filename =~ /^dfs:\/\//
     
-    path = if filename =~ /^dfs:\/\// then
-      parse_path(filename)
+    if filename =~ /^dfs:\/\// then
+      @file, path = parse_path(filename)
     else
-      File.join(@directory, filename)
+      path = File.join(@directory, filename)
     end
-    
     
     @file.write path, s     
     
@@ -194,10 +213,10 @@ class DRbFileClient
       
     end
     
-    filepath = if filename_zip =~ /^dfs:\/\// then
-      parse_path(filename_zip)
+    if filename_zip =~ /^dfs:\/\// then
+      @file, filepath = parse_path(filename_zip)
     else
-      File.join(@directory, filename_zip)
+      filepath = File.join(@directory, filename_zip)
     end
 
     @file.zip filepath, a
@@ -211,8 +230,8 @@ class DRbFileClient
     host = filename[/(?<=^dfs:\/\/)[^\/:]+/]
     port = filename[/(?<=^dfs:\/\/)[^:]+:(\d+)/,1]  || '61010'
 
-    @file = DRbObject.new nil, "druby://#{host}:#{port}"
-    filename[/(?<=^dfs:\/\/)[^\/]+\/(.*)/,1]          
+    file_server = DRbObject.new nil, "druby://#{host}:#{port}"
+    [file_server, filename[/(?<=^dfs:\/\/)[^\/]+\/(.*)/,1]]
 
   end
 
