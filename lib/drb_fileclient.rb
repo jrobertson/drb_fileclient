@@ -139,11 +139,15 @@ class DRbFileClient
     
     if raw_path =~ /^dfs:\/\// then
       _, path = parse_path(raw_path)
-      @file, path2 = parse_path(raw_path2)
     else
       path = File.join(@directory, raw_path)
+    end
+    
+    if raw_path2 =~ /^dfs:\/\// then
+      _, path2 = parse_path(raw_path2)
+    else
       path2 = File.join(@directory, raw_path2)
-    end 
+    end
       
     @file.mv path, path2
   end  
@@ -228,9 +232,11 @@ class DRbFileClient
   def parse_path(filename)
 
     host = filename[/(?<=^dfs:\/\/)[^\/:]+/]
+    @host = host if host
+    
     port = filename[/(?<=^dfs:\/\/)[^:]+:(\d+)/,1]  || '61010'
 
-    file_server = DRbObject.new nil, "druby://#{host}:#{port}"
+    file_server = DRbObject.new nil, "druby://#{host || @host}:#{port}"
     [file_server, filename[/(?<=^dfs:\/\/)[^\/]+\/(.*)/,1]]
 
   end
