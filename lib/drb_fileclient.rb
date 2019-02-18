@@ -8,6 +8,7 @@ require 'zip'
 
 class DRbFileClient
 
+
   def initialize(location=nil, host: nil, port: '61010')
     
     if location then
@@ -74,6 +75,21 @@ class DRbFileClient
     end 
       
   end   
+  
+  def directory?(filename=@filename)  
+    
+    return File.directory? filename unless @directory or filename =~ /^dfs:\/\//
+    
+    if filename =~ /^dfs:\/\// then
+      @file, filename2 = parse_path(filename)
+    else
+
+      filename2 = File.join(@directory, filename)
+    end
+
+    @file.directory?(filename2)
+    
+  end  
   
   def exists?(filename=@filename)  
     
@@ -247,17 +263,18 @@ class DfsFile
   
   @client = DRbFileClient.new
   
-  def self.exists?(filename)  @client.exists?(filename)  end  
-  def self.chdir(path)        @client.chdir(path)        end  
-  def self.cp(path, path2)    @client.cp(path, path2)    end         
-  def self.ls(path)           @client.ls(path)           end  
-  def self.mkdir(name)        @client.mkdir(name)        end    
-  def self.mkdir_p(path)      @client.mkdir_p(path)      end       
-  def self.mv(path, path2)    @client.mv(path, path2)    end     
-  def self.pwd()              @client.pwd()              end       
-  def self.read(filename)     @client.read(filename)     end
-  def self.rm(filename)       @client.rm(filename)       end  
-  def self.write(filename, s) @client.write(filename, s) end
-  def self.zip(filename, a)   @client.zip(filename, a)   end
+  def self.directory?(filename) @client.directory?(filename) end 
+  def self.exists?(filename)    @client.exists?(filename)    end  
+  def self.chdir(path)          @client.chdir(path)          end  
+  def self.cp(path, path2)      @client.cp(path, path2)      end         
+  def self.ls(path)             @client.ls(path)             end  
+  def self.mkdir(name)          @client.mkdir(name)          end    
+  def self.mkdir_p(path)        @client.mkdir_p(path)        end       
+  def self.mv(path, path2)      @client.mv(path, path2)      end     
+  def self.pwd()                @client.pwd()                end       
+  def self.read(filename)       @client.read(filename)       end
+  def self.rm(filename)         @client.rm(filename)         end  
+  def self.write(filename, s)   @client.write(filename, s)   end
+  def self.zip(filename, a)     @client.zip(filename, a)     end
   
 end
