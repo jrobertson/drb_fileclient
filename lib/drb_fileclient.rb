@@ -4,12 +4,15 @@
 
 require 'drb'
 require 'zip'
+require 'c32'
 
 
 class DRbFileClient
+  using ColouredText
 
-
-  def initialize(location=nil, host: nil, port: '61010')
+  def initialize(location=nil, host: nil, port: '61010', debug: false)
+    
+    @debug = debug
     
     if location then
       
@@ -45,17 +48,24 @@ class DRbFileClient
 
   def cp(raw_path, raw_path2)
     
+    puts 'inside cp'.info if @debug
+    
     unless @directory or raw_path =~ /^dfs:\/\// then
       return FileUtils.cp raw_path, raw_path2 
     end
     
     if raw_path =~ /^dfs:\/\// then
       
+      if @debug then
+        puts ('raw_path: ' + raw_path.inspect).debug
+        puts ('raw_path2: ' + raw_path2.inspect).debug
+      end
+      
       if raw_path[/^dfs:\/\/([^\/]+)/] == raw_path2[/^dfs:\/\/([^\/]+)/] then
         
         _, path = parse_path(raw_path)
         @file, path2 = parse_path(raw_path2)
-        @file.cp path, path
+        @file.cp path, path2
         
       else
         
