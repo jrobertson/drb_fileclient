@@ -49,11 +49,7 @@ class DRbFileClient
   def cp(raw_path, raw_path2)
     
     puts 'inside cp'.info if @debug
-    
-    unless @directory or raw_path =~ /^dfs:\/\// then
-      return FileUtils.cp raw_path, raw_path2 
-    end
-    
+        
     if raw_path =~ /^dfs:\/\// then
       
       if @debug then
@@ -76,9 +72,18 @@ class DRbFileClient
         file2.write path2, content
 
       end
+    
+    elsif raw_path2 =~ /dfs:\/\// then
+      
+      puts 'option2'.info if @debug
+      
+      file2, path2 = parse_path(raw_path2)
+      puts ('path2: ' + path2.inspect).debug if @debug
+      file2.write path2, File.read(raw_path)
       
     else
       
+      puts 'option3'.info if @debug
       @file.cp File.join(@directory, raw_path), 
           File.join(@directory, raw_path2)
       
