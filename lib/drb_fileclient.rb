@@ -84,8 +84,7 @@ class DRbFileClient
     else
       
       puts 'option3'.info if @debug
-      @file.cp File.join(@directory, raw_path), 
-          File.join(@directory, raw_path2)
+      FileUtils.cp raw_path, raw_path2
       
     end 
       
