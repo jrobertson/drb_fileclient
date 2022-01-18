@@ -146,6 +146,18 @@ class DRbFileClient
 
   alias exist? exists?
 
+  def glob(s)
+
+    if s =~ /^dfs:\/\// then
+      @file, s2 = parse_path(s)
+    else
+      s2 = File.join(@directory, s)
+    end
+
+    @file.glob s2
+
+  end
+
   def ls(raw_path)
 
     return Dir[raw_path] unless @directory or raw_path =~ /^dfs:\/\//
@@ -306,6 +318,7 @@ class DfsFile
   def self.chdir(path)          @client.chdir(path)          end
   def self.chmod(num, filename) @client.chmod(num, filename) end
   def self.cp(path, path2)      @client.cp(path, path2)      end
+  def self.glob(s)              @client.glob(s)              end
   def self.ls(path)             @client.ls(path)             end
   def self.mkdir(name)          @client.mkdir(name)          end
   def self.mkdir_p(path)        @client.mkdir_p(path)        end
