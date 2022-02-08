@@ -253,6 +253,22 @@ class DRbFileClient
 
   end
 
+  def touch(s, mtime: Time.now)
+
+    unless @directory or s =~ /^dfs:\/\// then
+      return FileUtils.touch(s, mtime: mtime)
+    end
+
+    if s =~ /^dfs:\/\// then
+      @file, s2 = parse_path(s)
+    else
+      s2 = File.join(@directory, s)
+    end
+
+    @file.touch s2, mtime: mtime
+
+  end
+
   def write(filename=@filename, s)
 
     return File.write filename, s unless @directory or filename =~ /^dfs:\/\//
@@ -326,6 +342,11 @@ class DfsFile
   def self.pwd()                @client.pwd()                end
   def self.read(filename)       @client.read(filename)       end
   def self.rm(filename)         @client.rm(filename)         end
+
+  def self.touch(filename, mtime: Time.now)
+    @client.touch(filename, mtime: mtime)
+  end
+
   def self.write(filename, s)   @client.write(filename, s)   end
   def self.zip(filename, a)     @client.zip(filename, a)     end
 
