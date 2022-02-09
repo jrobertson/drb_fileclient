@@ -253,6 +253,22 @@ class DRbFileClient
 
   end
 
+  def rm_r(path, force: false)
+
+    unless @directory or path =~ /^dfs:\/\// then
+      return FileUtils.rm_r(path, force: force)
+    end
+
+    if path =~ /^dfs:\/\// then
+      @file, path2 = parse_path( path)
+    else
+      path2 = File.join(@directory, path)
+    end
+
+    @file.rm_r(path2, force: force)
+
+  end
+
   def touch(s, mtime: Time.now)
 
     unless @directory or s =~ /^dfs:\/\// then
@@ -342,6 +358,10 @@ class DfsFile
   def self.pwd()                @client.pwd()                end
   def self.read(filename)       @client.read(filename)       end
   def self.rm(filename)         @client.rm(filename)         end
+
+  def self.rm_r(filename, force: false)
+    @client.rm_r(filename, force: force)
+  end
 
   def self.touch(filename, mtime: Time.now)
     @client.touch(filename, mtime: mtime)
