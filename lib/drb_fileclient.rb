@@ -5,6 +5,7 @@
 require 'drb'
 require 'zip'
 require 'c32'
+require 'dir-to-xml'
 
 
 class DRbFileClient
@@ -269,6 +270,37 @@ class DRbFileClient
 
   end
 
+  def ru(path)
+
+    return DirToXML.new(path, verbose: false).latest unless @directory \
+        or path =~ /^dfs:\/\//
+
+    if path =~ /^dfs:\/\// then
+      @file, path2 = parse_path( path)
+    else
+      path2 = File.join(@directory, path)
+    end
+
+    @file.ru  path2
+
+  end
+
+  def ru_r(path)
+
+    unless @directory or path =~ /^dfs:\/\// then
+      return DirToXML.new(path, recursive: true, verbose: false).latest
+    end
+
+    if path =~ /^dfs:\/\// then
+      @file, path2 = parse_path( path)
+    else
+      path2 = File.join(@directory, path)
+    end
+
+    @file.ru_r  path2
+
+  end
+
   def touch(s, mtime: Time.now)
 
     unless @directory or s =~ /^dfs:\/\// then
@@ -362,6 +394,9 @@ class DfsFile
   def self.rm_r(filename, force: false)
     @client.rm_r(filename, force: force)
   end
+
+  def self.ru(path)             @client.ru(path)             end
+  def self.ru_r(path)           @client.ru_r(path)           end
 
   def self.touch(filename, mtime: Time.now)
     @client.touch(filename, mtime: mtime)
