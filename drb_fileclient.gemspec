@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'drb_fileclient'
-  s.version = '0.7.1'
+  s.version = '0.7.2'
   s.summary = 'Reads or writes files from a remote DRb server. ' + 
       'Simple as DfsFile.read  or DfsFile.write.'
   s.authors = ['James Robertson']

@@ -5,7 +5,8 @@
 require 'drb'
 require 'zip'
 require 'c32'
-require 'dir-to-xml'
+# Commented out to avoid bug with RXFHelper constants
+#require 'dir-to-xml'
 
 
 class DRbFileClient
