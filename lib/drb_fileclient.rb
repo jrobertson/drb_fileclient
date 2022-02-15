@@ -9,6 +9,7 @@ require 'c32'
 #require 'dir-to-xml'
 
 
+
 class DRbFileClient
   using ColouredText
 
@@ -277,12 +278,13 @@ class DRbFileClient
         or path =~ /^dfs:\/\//
 
     if path =~ /^dfs:\/\// then
-      @file, path2 = parse_path( path)
+      @file, path2, addr = parse_path(path)
     else
       path2 = File.join(@directory, path)
     end
 
-    @file.ru  path2
+    found = @file.ru  path2
+    return (addr + found) if found and addr
 
   end
 
@@ -293,12 +295,13 @@ class DRbFileClient
     end
 
     if path =~ /^dfs:\/\// then
-      @file, path2 = parse_path( path)
+      @file, path2, addr = parse_path(path)
     else
       path2 = File.join(@directory, path)
     end
 
-    @file.ru_r  path2
+    found = @file.ru_r  path2
+    return (addr + found) if found and addr
 
   end
 
@@ -368,7 +371,7 @@ class DRbFileClient
     port = filename[/(?<=^dfs:\/\/)[^:]+:(\d+)/,1]  || '61010'
 
     file_server = DRbObject.new nil, "druby://#{host || @host}:#{port}"
-    [file_server, filename[/(?<=^dfs:\/\/)[^\/]+\/(.*)/,1]]
+    [file_server, filename[/(?<=^dfs:\/\/)[^\/]+\/(.*)/,1], ("dfs://%s:%s" % [host, port])]
 
   end
 
