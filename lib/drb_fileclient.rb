@@ -2,32 +2,13 @@
 
 # file: drb_fileclient.rb
 
-require 'drb'
 require 'zip'
-require 'c32'
-# Commented out to avoid bug with RXFHelper constants
-#require 'dir-to-xml'
+require 'dir-to-xml'
+require 'drb_fileclient-readwrite'
 
 
-
-class DRbFileClient
+class DRbFileClient < DRbFileClientReadWrite
   using ColouredText
-
-  def initialize(location=nil, host: nil, port: '61010', debug: false)
-
-    @debug = debug
-
-    if location then
-
-      host = location[/(?<=^dfs:\/\/)[^\/:]+/]
-      port = location[/(?<=^dfs:\/\/)[^:]+:(\d+)/,1]  || '61010'
-      @directory = location[/(?<=^dfs:\/\/)[^\/]+\/(.*)/,1]
-
-    end
-
-    DRb.start_service
-
-  end
 
   def chdir(raw_path)
 
@@ -132,35 +113,6 @@ class DRbFileClient
 
   end
 
-  def exists?(filename=@filename)
-
-    return File.exists? filename unless @directory or filename =~ /^dfs:\/\//
-
-    if filename =~ /^dfs:\/\// then
-      @file, filename2 = parse_path(filename)
-    else
-
-      filename2 = File.join(@directory, filename)
-    end
-
-    @file.exists?(filename2)
-
-  end
-
-  alias exist? exists?
-
-  def glob(s)
-
-    if s =~ /^dfs:\/\// then
-      @file, s2 = parse_path(s)
-    else
-      s2 = File.join(@directory, s)
-    end
-
-    @file.glob s2
-
-  end
-
   def ls(raw_path)
 
     return Dir[raw_path] unless @directory or raw_path =~ /^dfs:\/\//
@@ -175,29 +127,6 @@ class DRbFileClient
 
     @file.ls path
 
-  end
-
-  def mkdir(name)
-
-    return FileUtils.mkdir name unless @directory or name =~ /^dfs:\/\//
-
-    @file, path = parse_path(name)
-    @file.mkdir path
-  end
-
-  def mkdir_p(raw_path)
-
-    unless @directory or raw_path =~ /^dfs:\/\// then
-      return FileUtils.mkdir_p raw_path
-    end
-
-    if raw_path =~ /^dfs:\/\// then
-      @file, filepath = parse_path(raw_path)
-    else
-      filepath = File.join(@directory, raw_path)
-    end
-
-    @file.mkdir_p filepath
   end
 
   def mv(raw_path, raw_path2)
@@ -226,49 +155,6 @@ class DRbFileClient
     return Dir.pwd unless @directory
 
     '/' + @directory if @file
-
-  end
-
-  def read(filename=@filename)
-
-    return File.read filename, s unless @directory or filename =~ /^dfs:\/\//
-
-    if filename =~ /^dfs:\/\// then
-      @file, path = parse_path(filename)
-    else
-      path = File.join(@directory, filename)
-    end
-
-    @file.read path
-  end
-
-  def rm(path)
-
-    return FileUtils.rm path unless @directory or path =~ /^dfs:\/\//
-
-    if path =~ /^dfs:\/\// then
-      @file, path2 = parse_path( path)
-    else
-      path2 = File.join(@directory, path)
-    end
-
-    @file.rm  path2
-
-  end
-
-  def rm_r(path, force: false)
-
-    unless @directory or path =~ /^dfs:\/\// then
-      return FileUtils.rm_r(path, force: force)
-    end
-
-    if path =~ /^dfs:\/\// then
-      @file, path2 = parse_path( path)
-    else
-      path2 = File.join(@directory, path)
-    end
-
-    @file.rm_r(path2, force: force)
 
   end
 
@@ -305,36 +191,6 @@ class DRbFileClient
 
   end
 
-  def touch(s, mtime: Time.now)
-
-    unless @directory or s =~ /^dfs:\/\// then
-      return FileUtils.touch(s, mtime: mtime)
-    end
-
-    if s =~ /^dfs:\/\// then
-      @file, s2 = parse_path(s)
-    else
-      s2 = File.join(@directory, s)
-    end
-
-    @file.touch s2, mtime: mtime
-
-  end
-
-  def write(filename=@filename, s)
-
-    return File.write filename, s unless @directory or filename =~ /^dfs:\/\//
-
-    if filename =~ /^dfs:\/\// then
-      @file, path = parse_path(filename)
-    else
-      path = File.join(@directory, filename)
-    end
-
-    @file.write path, s
-
-  end
-
   def zip(filename_zip, a)
 
     puts '@directory: ' + @directory.inspect if @debug
@@ -361,52 +217,36 @@ class DRbFileClient
 
   end
 
-  private
-
-  def parse_path(filename)
-
-    host = filename[/(?<=^dfs:\/\/)[^\/:]+/]
-    @host = host if host
-
-    port = filename[/(?<=^dfs:\/\/)[^:]+:(\d+)/,1]  || '61010'
-
-    file_server = DRbObject.new nil, "druby://#{host || @host}:#{port}"
-    [file_server, filename[/(?<=^dfs:\/\/)[^\/]+\/(.*)/,1], ("dfs://%s:%s" % [host, port])]
-
-  end
-
 end
 
-class DfsFile
 
-  @client = DRbFileClient.new
-
-  def self.directory?(filename) @client.directory?(filename) end
-  def self.exists?(filename)    @client.exists?(filename)    end
-  def self.chdir(path)          @client.chdir(path)          end
-  def self.chmod(num, filename) @client.chmod(num, filename) end
-  def self.cp(path, path2)      @client.cp(path, path2)      end
-  def self.glob(s)              @client.glob(s)              end
-  def self.ls(path)             @client.ls(path)             end
-  def self.mkdir(name)          @client.mkdir(name)          end
-  def self.mkdir_p(path)        @client.mkdir_p(path)        end
-  def self.mv(path, path2)      @client.mv(path, path2)      end
-  def self.pwd()                @client.pwd()                end
-  def self.read(filename)       @client.read(filename)       end
-  def self.rm(filename)         @client.rm(filename)         end
-
-  def self.rm_r(filename, force: false)
-    @client.rm_r(filename, force: force)
-  end
-
-  def self.ru(path)             @client.ru(path)             end
-  def self.ru_r(path)           @client.ru_r(path)           end
-
-  def self.touch(filename, mtime: Time.now)
-    @client.touch(filename, mtime: mtime)
-  end
-
-  def self.write(filename, s)   @client.write(filename, s)   end
-  def self.zip(filename, a)     @client.zip(filename, a)     end
-
+def DfsFile.directory?(filename)
+  DRbFileClient.new.directory?(filename)
+end
+def DfsFile.chdir(path)
+  DRbFileClient.new.chdir(path)
+end
+def DfsFile.chmod(num, filename)
+  DRbFileClient.new.chmod(num, filename)
+end
+def DfsFile.cp(path, path2)
+  DRbFileClient.new.cp(path, path2)
+end
+def DfsFile.ls(path)
+  DRbFileClient.new.ls(path)
+end
+def DfsFile.mv(path, path2)
+  DRbFileClient.new.mv(path, path2)
+end
+def DfsFile.pwd()
+  DRbFileClient.new.pwd()
+end
+def DfsFile.ru(path)
+  DRbFileClient.new.ru(path)
+end
+def DfsFile.ru_r(path)
+  DRbFileClient.new.ru_r(path)
+end
+def DfsFile.zip(filename, a)
+  DRbFileClient.new.zip(filename, a)
 end
